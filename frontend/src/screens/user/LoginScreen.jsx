@@ -1,53 +1,97 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import FormContainer from '../../components/FormContainer';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Form } from 'react-bootstrap';
+import { Row, Col } from 'react-bootstrap';
+import { useDispatch, useSelector } from 'react-redux';
+import { useLoginMutation } from '../../slices/usersApiSlice';
+import { setCredentials } from '../../slices/authSlice';
+import { toast } from 'react-toastify';
+
 
 
 const LoginScreen = () => {
     const [email,setEmail] = useState('');
     const [password,setPassword] =useState('');
-    const submitHandler = (e)=>{
+
+    const navigate = useNavigate();
+    const dispatch = useDispatch();
+
+    const [login,{isLoading}]=useLoginMutation();
+    const { userInfo }=useSelector((state)=>state.auth);
+
+    useEffect(()=>{
+        if(userInfo){
+            navigate('/');
+        }
+    },[navigate,userInfo]);
+
+  
+
+    const submitHandler = async (e) => {
         e.preventDefault();
-        console.log('Submitt!!!');
-    }
-  return (
-    <FormContainer>
-        <h1>Sign In</h1>
-        <Form onSubmit={submitHandler} >
+        try {
+          const res = await login({ email, password }).unwrap();
+          if (res._id) {
+            dispatch(setCredentials({ ...res }));
+            navigate('/'); // Navigate to the desired page
+          } else {
+            toast.error("An unknown error occurred");
+          }
+        } catch (err) {
+          console.log('Error object:', err);
+          if (err.data && err.data.message) {
+            toast.error(err.data.message);
+          } else {
+            toast.error("An unknown error occurred");
+          }
+        }
+      };
+    
+    return (
+        <FormContainer>
+          <h1>Sign In</h1>
+    
+          <Form onSubmit={submitHandler}>
             <Form.Group className='my-2' controlId='email'>
-            <Form.Label>Email Address</Form.Label>
-                <Form.Control
-                type = 'email'
-                placeholder='Enter Email'
+              <Form.Label>Email Address</Form.Label>
+              <Form.Control
+                type='email'
+                placeholder='Enter email'
                 value={email}
-                onChange={(e)=>setEmail(e.target.value)}
-                >
-
-                </Form.Control>
+                onChange={(e) => setEmail(e.target.value)}
+              ></Form.Control>
             </Form.Group>
-            <Form.Group className='my-2' controlId='email'>
-                <Form.Label>Password</Form.Label>
-                <Form.Control
-                type = 'password'
-                placeholder='Enter Password'
+    
+            <Form.Group className='my-2' controlId='password'>
+              <Form.Label>Password</Form.Label>
+              <Form.Control
+                type='password'
+                placeholder='Enter password'
                 value={password}
-                onChange={(e)=>setPassword(e.target.value)}
-                >
-
-                </Form.Control>
+                onChange={(e) => setPassword(e.target.value)}
+              ></Form.Control>
             </Form.Group>
-            <Button type='submit'varient='primary' className='mt-3' >
-                Sign IN
+    
+            <Button
+              disabled={isLoading}
+              type='submit'
+              variant='primary'
+              className='mt-3'
+            >
+              Sign In
             </Button>
-            <Row className='py-3'>
-                <Col>
-                    new customer? <Link to='/register'>Register</Link>
-                </Col>
-            </Row>
-        </Form>
-    </FormContainer>
-  )
-}
+          </Form>
+    
+       
+    
+          <Row className='py-3'>
+            <Col>
+              New Customer? <Link to='/register'>Register</Link>
+            </Col>
+          </Row>
+        </FormContainer>
+      );
+    };
 
-export default LoginScreen
+export default LoginScreen;
