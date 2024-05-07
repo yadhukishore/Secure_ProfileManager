@@ -1,62 +1,62 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Form, Button, Row, Col } from 'react-bootstrap';
+import { Form, Button, } from 'react-bootstrap';
 import FormContainer from '../../components/FormContainer';
 import { useDispatch, useSelector } from 'react-redux';
-import { useRegisterMutation } from '../../slices/usersApiSlice';
 import { toast } from 'react-toastify';
 import { setCredentials } from '../../slices/authSlice';
 import Loader from '../../components/Loader';
+import { useUpdateUserMutation } from '../../slices/usersApiSlice';
 
-const RegisterScreen = () => {
+const ProfileScreen = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPass, setConfirmPass] = useState('');
 
-    const navigate = useNavigate();
+   
     const dispatch = useDispatch();
 
-const [register,{isLoading}]=useRegisterMutation();
     const {userInfo} = useSelector((state)=> state.auth);
-    
+    const [updateProfile,{isLoading}] = useUpdateUserMutation();
 
     useEffect(()=>{
-      if(userInfo){
-          navigate('/');
-      }
-  },[navigate,userInfo]);
+   setName(userInfo.name);
+   setEmail(userInfo.email);
+  },[userInfo.setName,userInfo.setEmail]);
 
   const submitHandler = async (e) => {
     e.preventDefault();
     if(password !== confirmPass){
       toast.error('Password do not Match Bruh!')
     } else {
-      try {
-        const res = await register({ name, email, password }).unwrap();
-        if (res._id) {
-          dispatch(setCredentials({ ...res }));
-          navigate('/'); 
-        } 
-      } catch (err) {
-        console.log('Error object:', err);
-        if (err.data && err.data.message) {
-          toast.error(err.data.message);
-        } else {
-          toast.error("An unknown error occurred");
+        try {
+            const res = await updateProfile({
+                _id: userInfo._id,
+                name,
+                email,
+                password
+            }).unwrap();
+            dispatch(setCredentials({...res}));
+            toast.success('Profile Updated')
+        } catch (err) {
+            console.log('Error object:', err);
+            if (err.data && err.data.message) {
+              toast.error(err.data.message);
+            } else {
+              toast.error("An unknown error occurred");
+            }
         }
-      }
     }
   };
 
   return (
     <FormContainer>
-      <h1>Sign Up/Register</h1>
+      <h1>Update Profile</h1>
 
       <Form onSubmit={submitHandler}>
 
       <Form.Group className='my-2' controlId='name'>
-          <Form.Label>Vame Address</Form.Label>
+          <Form.Label>Name</Form.Label>
           <Form.Control
             type='text'
             placeholder='Enter name'
@@ -96,20 +96,16 @@ const [register,{isLoading}]=useRegisterMutation();
           ></Form.Control>
         </Form.Group>
 
-    {isLoading && <Loader/>}
+        {isLoading && <Loader/>}
 
         <Button type='submit' variant='primary' className='mt-3'>
-          Sign Up
+          Update
         </Button>
       </Form>
 
-      <Row className='py-3'>
-        <Col>
-          Alredy have an account? <Link to={`/login`}>Login</Link>
-        </Col>
-      </Row>
+
     </FormContainer>
   );
 };
 
-export default RegisterScreen;
+export default ProfileScreen;
